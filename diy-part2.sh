@@ -24,5 +24,17 @@ git clone https://github.com/jerrykuku/luci-app-argon-config package/luci-app-ar
 rm -rf package/lean/luci-theme-argon/
 git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 
+#SSR
+svn co https://github.com/fw876/helloworld/trunk/xray-core package/xray-core
+svn co https://github.com/fw876/helloworld/trunk/xray-plugin package/xray-plugin
+svn co https://github.com/fw876/helloworld/trunk/shadowsocks-rust package/shadowsocks-rust
+svn co https://github.com/fw876/helloworld/trunk/shadowsocksr-libev package/shadowsocksr-libev
+svn co https://github.com/fw876/helloworld/trunk/v2ray-plugin package/v2ray-plugin
+svn co https://github.com/fw876/helloworld/trunk/simple-obfs package/simple-obfs
+svn co https://github.com/fw876/helloworld/trunk/trojan package/trojan
+svn co https://github.com/fw876/helloworld/trunk/v2ray-core package/v2ray-core
+svn co https://github.com/fw876/helloworld/trunk/luci-app-ssr-plus package/luci-app-ssr-plus
+svn co https://github.com/fw876/helloworld/trunk/naiveproxy package/naiveproxy
+
 ./scripts/feeds update -a
 ./scripts/feeds install -a
