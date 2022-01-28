@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+# Copyright (c) 2019-2022 Doosit
 #
 # This is free software, licensed under the MIT License.
 # See /LICENSE for more information.
@@ -166,18 +166,20 @@ jobs:
 
     - name: Upload firmware to release
       uses: softprops/action-gh-release@v1
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: 🚀Autobuild / ${{ steps.tag.outputs.release_tag }}
+        name: 🚀Autobuild @doosit / ${{ env.DATE }}
+        allowUpdates: true
+        tag: ${{ env.FILE_NAME }}
+        commit: master
+        token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           🚀 Autobuild | 自动编译
           1、本固件为自动编译
           2、发行版中只提供完整的固件
-          默认IP： 10.0.0.1 默认密码： password
+          默认IP： 192.168.1.1 默认密码： password
           当前使用版本:【编译前的最后一次[➦主源码](https://github.com/coolsnowwolf/lede)更新记录】
-        files: ${{ env.FIRMWARE }}/*
+          ${{ env.useVersionInfo }}
+        artifacts: ${{ env.FIRMWARE }}/*
 
     - name: Delete workflow runs
       uses: GitRML/delete-workflow-runs@main
