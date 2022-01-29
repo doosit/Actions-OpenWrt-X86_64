@@ -22,14 +22,20 @@ env:
   UPLOAD_WETRANSFER: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
+  FILE_NAME: x86_64
+  PRODUCT_NAME: x86_64
 
 jobs:
-    build:
+  build:
     runs-on: ubuntu-20.04
+    if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
+    #- name: WeChat notification
+    #  run: curl https://sc.ftqq.com/${{ secrets.ServerChan }}.send?text=${{ env.FILE_NAME }}开始编译
+      
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@master
 
     - name: Initialization environment
       env:
@@ -38,6 +44,7 @@ jobs:
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq update
         sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-2004)
+        sudo -E apt-get -qq install time
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
