@@ -1,14 +1,13 @@
-#
-# Copyright (c) 2019-2022 Doosit
+#============================================================
+# Copyright (c) 2019-2021 Doosit
 #
 # This is free software, licensed under the MIT License.
 # See /LICENSE for more information.
 #
-# https://github.com/P3TERX/Actions-OpenWrt
 # Description: Build OpenWrt using GitHub Actions
-#
+#============================================================
 
-name: Build OpenWrt
+name: Build OpenWrt X86_64
 
 on:
   repository_dispatch:
@@ -17,7 +16,17 @@ on:
       ssh:
         description: 'SSH connection to Actions'
         required: false
-        default: 'false'
+        default: 'false'      
+#  schedule:
+    - cron: 0 16 * * *
+  #  每天晚上凌晨0点自动编译.
+  #  watch:
+  #    types: started
+  #  - cron: 0 8 */5 * *
+  #  - cron: 0 22,14 * * *
+  #  每天运行两次，在上午 6 点和晚上 22 点。
+  #  - cron: 0 20 * * fri
+  #  每周五凌晨四点自动编译。
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -32,14 +41,20 @@ env:
   UPLOAD_WETRANSFER: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
+  FILE_NAME: x86_64
+  PRODUCT_NAME: x86_64
 
 jobs:
   build:
     runs-on: ubuntu-20.04
+    if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
+    #- name: WeChat notification
+    #  run: curl https://sc.ftqq.com/${{ secrets.ServerChan }}.send?text=${{ env.FILE_NAME }}开始编译
+      
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@master
 
     - name: Initialization environment
       env:
@@ -53,13 +68,20 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
-
+        
     - name: Clone source code
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        cd openwrt
+        useVersionInfo=$(git show -s --date=short --format="Author: %an<br/>date: %cd<br/>commit: %s<br/>commit hash: %H")
+        echo "useVersionInfo=$useVersionInfo" >> $GITHUB_ENV
+        echo "DATE=$(date "+%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+        echo "DATE1=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+#        echo "::set-env name=useVersionInfo::$useVersionInfo"
+#        echo "::set-env name=DATE::$(date "+%Y-%m-%d %H:%M:%S")"
 
     - name: Load custom feeds
       run: |
@@ -81,13 +103,13 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-
+        
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
-      env:
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #env:
+      #  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: Download package
       id: package
@@ -97,7 +119,6 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
     - name: Compile the firmware
       id: compile
       run: |
@@ -108,13 +129,47 @@ jobs:
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-
+#        [ -s DEVICE_NAME ] && echo "::set-env name=DEVICE_NAME::_$(cat DEVICE_NAME)"
+#        echo "::set-env name=FILE_DATE::_$(date +"%Y%m%d%H%M")"
     - name: Check space usage
       if: (!cancelled())
       run: df -hT
 
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#    - name: delete files
+#      run: |
+#        cd openwrt 
+#        rm -rf bin/targets/x86/64/*Lenyu.img.gz
+#        rm -rf bin/targets/x86/64/packages
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic.manifest
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-rootfs-squashfs.img.gz
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-combined-squashfs.vmdk
+#        rm -rf bin/targets/x86/64/config.seed
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-uefi-gpt-squashfs.vmdk
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-vmlinuz
+#        rm -rf bin/targets/x86/64/sha256sums
+#        rm -rf bin/targets/x86/64/config.buildinfo
+#        rm -rf bin/targets/x86/64/feeds.buildinfo
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic-kernel.bin
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.vmdk
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.vmdk
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-rootfs.img.gz
+#        rm -rf bin/targets/x86/64/version.buildinfo
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img
+#        rm -rf bin/targets/x86/64/openwrt-x86-64-generic-squashfs-rootfs.img
+#        sleep 3
+#        stre=`sed '11!d'  include/kernel-version.mk` >nul 2>nul
+#        sleep 2
+#        mv bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined.img.gz      bin/targets/x86/64/openwrt_x86-64-`date '+%m%d'`_5.4.`echo ${stre#* .}`_dev_MuaChow.img.gz
+#        mv bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img.gz  bin/targets/x86/64/openwrt_x86-64-`date '+%m%d'`_5.4.`echo ${stre#* .}`_uefi-gpt_dev_MuaChow.img.gz
+#        exit
+        
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
     - name: Upload bin directory
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@master
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
         name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
@@ -122,52 +177,27 @@ jobs:
 
     - name: Organize files
       id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
+        tar -zcvf AllPackages.tar.gz openwrt/bin/packages
+        mv AllPackages.tar.gz openwrt/bin/targets/*/*
         cd openwrt/bin/targets/*/*
-        rm -rf packages
+        rm -rf packages config.buildinfo feeds.buildinfo sha256sums version.buildinfo *.manifest
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "::set-output name=status::success"
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@main
-      if: steps.organize.outputs.status == 'success' && !cancelled()
+      uses: actions/upload-artifact@master
+      if: env.UPLOAD_FIRMWARE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
-
-    - name: Upload firmware to cowtransfer
-      id: cowtransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
-        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
-        echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
-
-    - name: Upload firmware to WeTransfer
-      id: wetransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
-        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
-        echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
-
-    - name: Generate release tag
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
-        touch release.txt
-        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
-        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
-        echo "::set-output name=status::success"
-
-    - name: Upload firmware to release
-      uses: softprops/action-gh-release@v1
+                   
+    - name: Create release
+      id: release
+      uses: ncipollo/release-action@v1
       with:
-        name: 🚀Autobuild @doosit / ${{ env.DATE }}
+        name: 🚀Autobuild / ${{ env.PRODUCT_NAME }} / ${{ env.DATE }}
         allowUpdates: true
         tag: ${{ env.FILE_NAME }}
         commit: master
@@ -176,7 +206,7 @@ jobs:
           🚀 Autobuild | 自动编译
           1、本固件为自动编译
           2、发行版中只提供完整的固件
-          默认IP： 192.168.1.1 默认密码： password
+          默认IP：192.168.1.1 默认密码： password
           当前使用版本:【编译前的最后一次[➦主源码](https://github.com/coolsnowwolf/lede)更新记录】
           ${{ env.useVersionInfo }}
         artifacts: ${{ env.FIRMWARE }}/*
@@ -185,13 +215,13 @@ jobs:
       uses: GitRML/delete-workflow-runs@main
       with:
         retain_days: 1
-        keep_minimum_runs: 3
+        keep_minimum_runs: 6
 
     - name: Remove old Releases
       uses: dev-drprasad/delete-older-releases@v0.1.0
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       with:
-        keep_latest: 3
+        keep_latest: 6
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
