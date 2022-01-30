@@ -25,9 +25,9 @@ rm -rf package/lean/luci-theme-argon/
 git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 
 #SSR
-echo "src-git ssrp https://github.com/fw876/helloworld.git" >> ./feeds.conf.default
+#echo "src-git ssrp https://github.com/fw876/helloworld.git" >> ./feeds.conf.default
 echo "src-git small https://github.com/kenzok8/small" >> ./feeds.conf.default
-echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall.git" >> ./feeds.conf.default
+#echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall.git" >> ./feeds.conf.default
 echo "src-git kenzo https://github.com/kenzok8/openwrt-packages" >> ./feeds.conf.default
 echo "src-git jerryk https://github.com/jerrykuku/openwrt-package" >> ./feeds.conf.default
 echo "src-git lienol https://github.com/Lienol/openwrt-package" >> ./feeds.conf.default
